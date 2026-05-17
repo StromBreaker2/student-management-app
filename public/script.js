@@ -1,5 +1,3 @@
-const API_URL = '/api/students';
-
 // DOM Elements
 const studentForm = document.getElementById('student-form');
 const studentsList = document.getElementById('students-list');
@@ -22,6 +20,8 @@ const gradeInput = document.getElementById('grade');
 let students = [];
 let isEditing = false;
 
+const API_URL = '/api/students';
+
 // Initialize
 document.addEventListener('DOMContentLoaded', fetchStudents);
 
@@ -30,7 +30,6 @@ async function fetchStudents() {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Failed to fetch students');
-        
         students = await response.json();
         renderStudents();
     } catch (error) {
@@ -55,15 +54,14 @@ function renderStudents() {
     students.forEach(student => {
         const tr = document.createElement('tr');
         tr.style.animation = 'fadeIn 0.3s ease-out forwards';
-        
         tr.innerHTML = `
             <td><strong>${escapeHTML(student.roll_number)}</strong></td>
             <td>${escapeHTML(student.name)}</td>
             <td>${escapeHTML(student.course)}</td>
             <td>${escapeHTML(student.grade || '-')}</td>
             <td>
-                <button class="btn edit-btn" onclick="editStudent(${student.id})">Edit</button>
-                <button class="btn danger-btn" onclick="deleteStudent(${student.id})">Delete</button>
+                <button class="btn edit-btn" onclick="editStudent('${student._id}')">Edit</button>
+                <button class="btn danger-btn" onclick="deleteStudent('${student._id}')">Delete</button>
             </td>
         `;
         studentsList.appendChild(tr);
@@ -83,31 +81,23 @@ studentForm.addEventListener('submit', async (e) => {
 
     try {
         if (isEditing) {
-            // Update
             const id = idInput.value;
             const response = await fetch(`${API_URL}/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(studentData)
             });
-
             const result = await response.json();
-            
             if (!response.ok) throw new Error(result.error || 'Failed to update student');
-            
             showMessage('Student updated successfully!', 'success');
         } else {
-            // Add
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(studentData)
             });
-
             const result = await response.json();
-            
             if (!response.ok) throw new Error(result.error || 'Failed to add student');
-            
             showMessage('Student added successfully!', 'success');
         }
 
@@ -118,13 +108,13 @@ studentForm.addEventListener('submit', async (e) => {
     }
 });
 
-// Edit Student (Populate form)
+// Edit Student
 function editStudent(id) {
-    const student = students.find(s => s.id === id);
+    const student = students.find(s => s._id === id);
     if (!student) return;
 
     isEditing = true;
-    idInput.value = student.id;
+    idInput.value = student._id;
     nameInput.value = student.name;
     rollNumberInput.value = student.roll_number;
     courseInput.value = student.course;
@@ -133,8 +123,6 @@ function editStudent(id) {
     formTitle.textContent = 'Edit Student Record';
     submitBtn.textContent = 'Update Student';
     cancelBtn.classList.remove('hidden');
-    
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -154,8 +142,7 @@ async function deleteStudent(id) {
 
         showMessage('Student deleted successfully!', 'success');
         fetchStudents();
-        
-        // Reset form if the deleted student was being edited
+
         if (isEditing && idInput.value == id) {
             resetForm();
         }
@@ -177,12 +164,11 @@ function resetForm() {
     cancelBtn.classList.add('hidden');
 }
 
-// Show Message utility
+// Show Message
 function showMessage(msg, type) {
     formMessage.textContent = msg;
     formMessage.className = `message ${type}`;
     formMessage.classList.remove('hidden');
-
     setTimeout(() => {
         formMessage.classList.add('hidden');
     }, 5000);
